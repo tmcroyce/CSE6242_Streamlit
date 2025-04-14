@@ -66,3 +66,48 @@ Or depending on your workflow, you can keep using your branch.
 
 ### 11 Repeat for your next feature! 
 Starting at step 1.
+
+# Music Similarity Visualization
+
+## Data Files Setup
+
+This application requires several large data files that are not included in the GitHub repository due to size limitations. Instead, these files are downloaded from Google Drive at runtime. Follow these steps to set up the data files:
+
+1. **Upload large data files to Google Drive**:
+   - Upload the following files to your Google Drive:
+     - `non_nest_PCA.pkl`
+     - `pitches_PCA.pkl`
+     - `relevant_artist_columns.pkl`
+     - `timbres_PCA.pkl`
+
+2. **Get the file IDs from Google Drive**:
+   - For each file, get the sharing link
+   - Extract the ID from the URL (it's the long string after `/d/` and before any parameters)
+   - Example: `https://drive.google.com/file/d/1a2b3c4d5e6f7g8h9i0j/view?usp=sharing`
+     The ID is `1a2b3c4d5e6f7g8h9i0j`
+
+3. **Update the file IDs in the code**:
+   - Open `scripts/download_helpers.py`
+   - Replace `YOUR_FILE_ID_HERE` with the actual file IDs from your Google Drive
+
+4. **Test the download script**:
+   - Run `python download_data.py` to test downloading the files
+
+## Deployment
+
+1. Ensure all data files are properly set up with Google Drive
+2. Push to GitHub
+3. Deploy on Streamlit Cloud
+
+## Running the App Locally
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Download data files (first time only)
+python download_data.py
+
+# Run the Streamlit app
+streamlit run streamlit_app.py
+```

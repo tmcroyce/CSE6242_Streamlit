@@ -6,8 +6,15 @@ chmod +x setup.sh
 # Ensure pip is up to date
 pip install --upgrade pip
 
-# Install Python dependencies
-pip install -r requirements.txt
+# Install system dependencies needed for Pillow and other packages
+if command -v apt-get &> /dev/null; then
+    # For Debian/Ubuntu
+    apt-get update
+    apt-get install -y --no-install-recommends zlib1g-dev libjpeg-dev libpng-dev
+fi
+
+# Install Python dependencies - use wheels where possible
+pip install --prefer-binary -r requirements.txt
 
 # Create necessary directories if they don't exist
 mkdir -p ~/.streamlit

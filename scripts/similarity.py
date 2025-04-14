@@ -73,21 +73,25 @@ def reorder(in_array,ref):
     return ordered_data
 
 if __name__ == '__main__':
-    genre_PCA = pd.read_csv('data/artist_term_components.csv',index_col = 'Unnamed: 0')
-    with open('data/relevant_artist_columns.pkl', 'rb') as f: 
+    # Use absolute paths relative to the script location
+    import os
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    genre_PCA = pd.read_csv(os.path.join(script_dir, 'data/artist_term_components.csv'), index_col='Unnamed: 0')
+    with open(os.path.join(script_dir, 'data/relevant_artist_columns.pkl'), 'rb') as f: 
         similar_artists = pickle.load(f)
-    with open('data/pitches_PCA.pkl', 'rb') as f: 
+    with open(os.path.join(script_dir, 'data/pitches_PCA.pkl'), 'rb') as f: 
         pitches_PCA = pickle.load(f)
-    with open('data/timbres_PCA.pkl', 'rb') as f: 
+    with open(os.path.join(script_dir, 'data/timbres_PCA.pkl'), 'rb') as f: 
         timbre_PCA = pickle.load(f)
         
     #Note that non_nest_PCA.pkl just consist of the loudness_start metric.
     #None of the other metrics seemed to work, and I think any more than 5
     #metrics would be kind of excessive. 
     
-    with open('data/non_nest_PCA.pkl', 'rb') as f: 
+    with open(os.path.join(script_dir, 'data/non_nest_PCA.pkl'), 'rb') as f: 
         non_nest_PCA = pickle.load(f)
-    subset = pd.read_csv('data/artist_id_and_name.csv',index_col = 'song_id')
+    subset = pd.read_csv(os.path.join(script_dir, 'data/artist_id_and_name.csv'), index_col='song_id')
     
     label_order = list(subset.index)
     

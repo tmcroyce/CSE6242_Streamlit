@@ -78,7 +78,9 @@ DEFAULT_WEIGHTS = [1.0, 1.0, 1.0, 1.0, 2.0]
 @st.cache_data
 def load_songs():
     songs = []
-    csv_path = os.path.join(os.path.dirname(__file__), 'data', 'artist_id_and_name.csv')
+    # Use more robust path finding that works in both local and Streamlit Cloud environments
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(script_dir, 'data', 'artist_id_and_name.csv')
     
     try:
         with open(csv_path, 'r', encoding='utf-8') as file:
@@ -141,9 +143,13 @@ def run_similarity_script(center_node, weights, num_results=10):
     try:
         weights_str = str(weights).replace(' ', '')
         
+        # Get absolute path to script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(script_dir, "scripts", "similarity.py")
+        
         # Run the similarity script with center_node and weights
         result = subprocess.run(
-            ["python3", "scripts/similarity.py", center_node, weights_str, str(num_results)], 
+            ["python3", script_path, center_node, weights_str, str(num_results)], 
             capture_output=True, 
             text=True
         )

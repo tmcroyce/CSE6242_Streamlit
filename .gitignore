@@ -171,12 +171,11 @@ cython_debug/
 .pypirc
 
 # Experimentation files and output
-# Uncomment these lines below if you want to include data files in your repository
-# *.pkl
-# *.csv
 scratch.*
 static/
 
-# Include necessary data files
-!data/*.csv
+# The following line excludes all .pkl and .csv files EXCEPT those in the data directory
+*.pkl
+*.csv
 !data/*.pkl
+!data/*.csv

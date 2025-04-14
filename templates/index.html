@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<head>
+    <style>
+
+    path.link {
+        fill: none;
+        stroke-width: 1.5px;
+    }
+
+    circle {
+        stroke: #000;
+        stroke-width: 1.5px;
+    }
+
+    text {
+        fill: #fff;
+        font: 10px sans-serif;
+        pointer-events: none;
+    }
+
+    /* Grid layout for viz and controls */
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .center-content {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .grid-container {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        gap: 20px;
+    }
+    .visualization-area {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .controls-area {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .weight-control {
+        margin-bottom: 15px;
+    }
+    .weight-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    .debug-panel {
+        margin-top: 30px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        height: 200px;
+        overflow-y: auto;
+    }
+    select#song-select {
+        padding: 8px;
+        width: 300px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+    button#apply-weights {
+        background-color: #568203; /* Avocado color instead of #4CAF50 green */
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+    button#apply-weights:hover {
+        background-color: #3d5e01; /* Darker avocado instead of #45a049 */
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .table th, .table td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .table thead {
+        background-color: #f2f2f2;
+    }
+    .table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    .table tr:hover {
+        background-color: #f5f5f5;
+    }
+    .mt-4 {
+        margin-top: 20px;
+    }
+    
+    /* Search input styles */
+    .search-container {
+        position: relative;
+        display: inline-block;
+        width: 300px;
+        margin-bottom: 10px;
+    }
+    
+    #song-search {
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    
+    .select-container {
+        position: relative;
+        display: inline-block;
+        width: 300px;
+    }
+    
+    .dropdown-container {
+        margin-top: 5px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Music Similarity Visualization</title>
+
+    <!-- Bootstrap CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <!-- Font Awesome for YouTube icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- jQuery and jQuery UI for slider -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+    <!-- D3.js from CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="{{ url_for('static', filename='d3.v5.min.js') }}"></script>
+</head>
+
+<body>
+<div class="container">
+    <h1>Music Similarity Visualization</h1>
+    
+    <div class="center-content">
+        <div class="dropdown-container">
+            <div class="search-container">
+                <input type="text" id="song-search" placeholder="Search for songs or artists...">
+            </div>
+            <div class="select-container">
+                <label for="song-select">Select Center Song:</label>
+                <select id="song-select">
+                    <option value="">Loading songs...</option>
+                </select>
+            </div>
+            <div class="form-group mt-4">
+                <label>Year Range Filter:</label>
+                <div class="d-flex justify-content-between mb-2">
+                    <span id="min-year-display">1900</span>
+                    <span id="max-year-display">2025</span>
+                </div>
+                <div id="year-slider" class="mb-2"></div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="include-unknown-years" checked>
+                    <label class="form-check-label" for="include-unknown-years">
+                        Include songs with unknown years
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid-container">
+        <!-- Left side: Visualization and table -->
+        <div class="visualization-area">
+            <div id="visualization" style="width: 100%; height: 600px; border: 1px solid #ccc; background-color: #f5f5f5;">
+                <p>Loading visualization...</p>
+            </div>
+            
+            <!-- Similar songs table below the visualization -->
+            <div style="margin-top: 20px;">
+                <h4>Top 10 Similar Songs</h4>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table id="similar-songs-table" class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Artist</th>
+                                <th>Song</th>
+                                <th>Similarity</th>
+                                <th>YouTube</th>
+                            </tr>
+                        </thead>
+                        <tbody id="similar-songs-body">
+                            <!-- Similar songs will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right side for the Controls area -->
+        <div class="controls-area">
+            <h3>Similarity Weight Controls</h3>
+            <p>Adjust the importance of different musical characteristics in determining similarity.</p>
+            
+            <div class="weight-control">
+                <div class="weight-label">
+                    <span>Loudness:</span>
+                    <span class="weight-value" id="weight1-value">1.0</span>
+                </div>
+                <input type="range" id="weight1" min="0" max="5" step="0.1" value="1.0">
+            </div>
+            
+            <div class="weight-control">
+                <div class="weight-label">
+                    <span>Pitches:</span>
+                    <span class="weight-value" id="weight2-value">1.0</span>
+                </div>
+                <input type="range" id="weight2" min="0" max="5" step="0.1" value="1.0">
+            </div>
+            
+            <div class="weight-control">
+                <div class="weight-label">
+                    <span>Timbre:</span>
+                    <span class="weight-value" id="weight3-value">1.0</span>
+                </div>
+                <input type="range" id="weight3" min="0" max="5" step="0.1" value="1.0">
+            </div>
+            
+            <div class="weight-control">
+                <div class="weight-label">
+                    <span>Genre:</span>
+                    <span class="weight-value" id="weight4-value">1.0</span>
+                </div>
+                <input type="range" id="weight4" min="0" max="5" step="0.1" value="1.0">
+            </div>
+            
+            <div class="weight-control">
+                <div class="weight-label">
+                    <span>Similar Artists:</span>
+                    <span class="weight-value" id="weight5-value">2.0</span>
+                </div>
+                <input type="range" id="weight5" min="0" max="5" step="0.1" value="2.0">
+            </div>
+            
+            <button id="apply-weights">Apply Weights</button>
+            
+            <div style="margin-top: 20px;">
+                <h4>About Similarity Metrics</h4>
+                <p><strong>Loudness:</strong> The overall audio intensity of the song.</p>
+                <p><strong>Pitches:</strong> Notes and pitch patterns.</p>
+                <p><strong>Timbre:</strong> Sound quality or character.</p>
+                <p><strong>Genre:</strong> Musical style and category.</p>
+                <p><strong>Similar Artists:</strong> Artist similarity to center song artist.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="debug-panel" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+    <h3>Debug Information</h3>
+    <div id="debug-output"></div>
+</div>
+
+<script>
+function forceRefresh() {
+    document.getElementById('visualization').innerHTML = '';
+    CreateViz(center_node);
+}
+
+function testAPI() {
+    document.getElementById('api-result').innerHTML = 'Calling API...';
+    
+    fetch(`/run_script?center_node=SOCWJDB12A58A776AF`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            document.getElementById('api-result').innerHTML = 'API SUCCESS! First 100 characters:<br>' + 
+                data.substring(0, 100) + '...';
+            console.log("API data:", data);
+        })
+        .catch(error => {
+            document.getElementById('api-result').innerHTML = 'API ERROR: ' + error.message;
+            console.error('Error fetching data:', error);
+        });
+}
+
+// Song ID for Rick Astley - Never Gonna Give You Up -- we use this as the default center node 
+var center_node = "SOCWJDB12A58A776AF";
+
+function updateDebug(message) {
+    console.log(message);
+    var debugOutput = document.getElementById('debug-output');
+    var timestamp = new Date().toLocaleTimeString();
+    debugOutput.innerHTML += `<p><strong>${timestamp}:</strong> ${message}</p>`;
+}
+
+// Store all songs for search functionality
+let allSongs = [];
+
+// Year range filter vars
+let minYear = 1900;
+let maxYear = 2025;
+let includeUnknownYears = true;
+
+// Function: Load songs from the server
+function loadSongs() {
+    fetch('/get_songs')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            allSongs = data; 
+            
+            // Find min and max years in the dataset
+            const years = data
+                .map(song => parseInt(song.year))
+                .filter(year => !isNaN(year) && year > 0);
+            
+            if (years.length > 0) {
+                minYear = Math.min(...years);
+                maxYear = Math.max(...years);
+                
+                // Initialize the year slider with actual data range
+                initSlideYear(minYear, maxYear);
+            }
+            
+            updateSongDrop(data);
+        })
+        .catch(error => {
+            console.error("Error loading songs:", error);
+            document.getElementById('song-select').innerHTML = 
+                '<option value="">Error loading songs</option>';
+        });
+}
+
+// Function: Init year range slider
+function initSlideYear(min, max) {
+    // Update display vals
+    document.getElementById('min-year-display').textContent = min;
+    document.getElementById('max-year-display').textContent = max;
+    
+    // Init jQuery UI slider
+    $("#year-slider").slider({
+        range: true,
+        min: min,
+        max: max,
+        values: [min, max],
+        slide: function(event, ui) {
+            document.getElementById('min-year-display').textContent = ui.values[0];
+            document.getElementById('max-year-display').textContent = ui.values[1];
+            filtSongz();
+        }
+    });
+    
+    // event listener: include unknown years checkbox
+    document.getElementById('include-unknown-years').addEventListener('change', filtSongz);
+}
+
+// Func: Update song dropdown
+function updateSongDrop(songs) {
+    const select = document.getElementById('song-select');
+    select.innerHTML = ''; // Clear existing options
+    
+    // Sort songs
+    songs.sort((a, b) => {
+        const artistCompare = a.artist.localeCompare(b.artist);
+        if (artistCompare !== 0) return artistCompare;
+        return a.title.localeCompare(b.title);
+    });
+    
+    // Rick Astley song ID
+    const rickAstleyId = "SOCWJDB12A58A776AF";
+    let rickAstleyIndex = -1;
+    
+    songs.forEach(function(song, index) {
+        const option = document.createElement('option');
+        option.value = song.id;
+        option.text = `${song.artist} - ${song.title} (${song.year})`;
+        select.appendChild(option);
+        
+        // Keep track of Rick Astley's position
+        if (song.id === rickAstleyId) {
+            rickAstleyIndex = index;
+        }
+    });
+    
+    // Set Rick Astley default 
+    if (rickAstleyIndex >= 0) {
+        select.value = rickAstleyId;
+        center_node = rickAstleyId;
+        
+        // Find Rick Astley for center node
+        const rickAstleySong = songs.find(song => song.id === rickAstleyId);
+        if (rickAstleySong) {
+            centerSongArtist = rickAstleySong.artist;
+            centerSongTitle = rickAstleySong.title;
+        }
+    } else if (songs.length > 0) {
+        // Fallback 
+        select.value = songs[0].id;
+        center_node = songs[0].id;
+        centerSongArtist = songs[0].artist;
+        centerSongTitle = songs[0].title;
+    }
+    
+    // Init visualization with this song
+    CreateViz(center_node);
+}
+
+// Func: Filter songs based on search input and year range
+function filtSongz() {
+    const searchTerm = document.getElementById('song-search').value.toLowerCase();
+    
+    // Get year range values
+    const yearValues = $("#year-slider").slider("values");
+    const currentMinYear = yearValues[0];
+    const currentMaxYear = yearValues[1];
+    
+    // checkbox state
+    const includeUnknown = document.getElementById('include-unknown-years').checked;
+    
+    // Filter songs based on search term and year range
+    const filteredSongs = allSongs.filter(song => {
+        // Text search filter
+        const matchesSearch = searchTerm === '' || 
+            song.artist.toLowerCase().includes(searchTerm) || 
+            song.title.toLowerCase().includes(searchTerm);
+        
+        // Year filter
+        let matchesYear = false;
+        
+        // unknown years handling
+        if (song.year === 'Unknown') {
+            matchesYear = includeUnknown;
+        } else {
+            const songYear = parseInt(song.year);
+            matchesYear = !isNaN(songYear) && 
+                          songYear >= currentMinYear && 
+                          songYear <= currentMaxYear;
+        }
+        
+        return matchesSearch && matchesYear;
+    });
+    
+    updateSongDrop(filteredSongs);
+}
+
+// Add current weights object
+var currentWeights = {
+    weight1: 0.5,  // Loudness
+    weight2: 1.0,  // Pitches
+    weight3: 1.0,  // Timbre
+    weight4: 1.5,  // Genre
+    weight5: 1.5   // Similar artists
+};
+
+// Update weight display values when sliders change
+function setWeightConts() {
+    // Event listeners
+    for (let i = 1; i <= 5; i++) {
+        const slider = document.getElementById(`weight${i}`);
+        const display = document.getElementById(`weight${i}-value`);
+        
+        slider.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            display.textContent = value.toFixed(1);
+            currentWeights[`weight${i}`] = value;
+        });
+    }
+    
+    // weights button
+    document.getElementById('apply-weights').addEventListener('click', function() {
+        updateDebug("Applying new weights: " + JSON.stringify(currentWeights));
+        CreateViz(center_node);
+    });
+}
+
+function CreateViz(songId) {
+    console.log("Creating visualization for song ID:", songId);
+    
+    // Clear existing visualization
+    document.getElementById('visualization').innerHTML = '';
+    
+    // song info for center node
+    let centerSongArtist = "Unknown Artist";
+    let centerSongTitle = "Unknown Title";
+    
+    // Use allSongs array
+    const selectedSong = allSongs.find(song => song.id === songId);
+    if (selectedSong) {
+        centerSongArtist = selectedSong.artist;
+        centerSongTitle = selectedSong.title;
+    } else if (songId === "SOCWJDB12A58A776AF") {
+        // Fallback for Rick Astley if songDatabase not loaded yet
+        centerSongArtist = "Rick Astley";
+        centerSongTitle = "Never Gonna Give You Up";
+    }
+    
+    updateDebug(`Center song: ${centerSongArtist} - ${centerSongTitle}`);
+    
+    // Build the URL with weights parameters
+    let url = `/run_script?center_node=${songId}`;
+    for (let i = 1; i <= 5; i++) {
+        url += `&weight${i}=${currentWeights[`weight${i}`]}`;
+    }
+
+    // Create viz
+    d3.dsv(",", url, function(d) {
+        // Debug by checking raw data
+        console.log("Raw data row:", d);
+        updateDebug("Raw data row keys: " + JSON.stringify(Object.keys(d)));
+        
+        // Skip rows with missing data
+        if (!d.artist_name || !d.song_title || d.artist_name === "Unknown Artist" && d.song_title === "Unknown Title") {
+            return null; 
+        }
+        
+        // Process CSV data row with correct column order
+        return {
+            source: songId,
+            target: d.index,
+            rank: parseInt(d.rank) || 0,
+            artist_name: d.artist_name,
+            song_title: d.song_title,
+            similarity: parseFloat(d.weighted_similarity) || 0
+        };
+    }).then(function(data) {
+        // Filter out nulls
+        data = data.filter(d => d !== null);
+        
+        // Limit to top 10 by similarity
+        data.sort((a, b) => b.similarity - a.similarity);
+        data = data.slice(0, 10);
+        
+        console.log("Processed data:", data);
+        updateDebug("Processed data length: " + data.length);
+        
+        if (data.length === 0) {
+            document.getElementById('visualization').innerHTML = '<p>No data received from API.</p>';
+            return;
+        }
+        
+        // debugging row
+        if (data.length > 0) {
+            updateDebug("Sample row: " + JSON.stringify(data[0]));
+        }
+        
+        // Clear message
+        document.getElementById('visualization').innerHTML = '';
+
+        // Set dimensions and margins
+        var margin = {top: 50, right: 50, bottom: 50, left: 50},
+            width = 900 - margin.left - margin.right,  
+            height = 700 - margin.top - margin.bottom;  
+            
+        // Define radius for node arrangement
+        var radius = 600;  
+        
+        // Create SVG
+        var svg = d3.select("#visualization").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // map of nodes
+        var nodes = [];
+        var links = [];
+        
+        // Add center node first
+        var centerNode = {
+            id: songId,
+            name: centerSongArtist,
+            title: centerSongTitle,
+            isCenterNode: true,
+            x: width / 2,
+            y: height / 2
+        };
+        nodes.push(centerNode);
+        
+        // Calculate maximum similarity value for scaling
+        const maxSimilarity = Math.max(...data.map(d => d.similarity));
+        
+        // Add satellite nodes and links
+        data.forEach(function(d, i) {
+            // calc position on a circle, distance based on similarity
+            var angle = ((i + 1) / data.length) * 2 * Math.PI;
+            
+            // Scale radius based on similarity (inverse relationship)
+            var distanceFactor = Math.max(0.3, 1 - (d.similarity / maxSimilarity) * 0.8);
+            var nodeRadius = radius * distanceFactor;
+            
+            var x = width / 2 + nodeRadius * Math.cos(angle);
+            var y = height / 2 + nodeRadius * Math.sin(angle);
+            
+            // Create node
+            var node = {
+                id: d.target,
+                rank: d.rank,
+                name: d.artist_name,
+                title: d.song_title,
+                similarity: d.similarity,
+                isCenterNode: false,
+                x: x,
+                y: y
+            };
+            
+            // Log node -- debugging
+            updateDebug(`Node ${i+1}: artist="${node.name}", title="${node.title}", sim=${node.similarity}`);
+            
+            nodes.push(node);
+            
+            // Create link from center to this node
+            links.push({
+                source: centerNode,
+                target: node,
+                similarity: node.similarity
+            });
+        });
+        
+        // Create sim with forces
+        var simulation = d3.forceSimulation(nodes)
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(function(d) { 
+                return d.isCenterNode ? 68 : 53;  
+            }))
+            .force("link", d3.forceLink(links)
+                .id(function(d) { return d.id; })
+                .distance(function(d) { 
+                    return Math.max(100, 300 * (1 - d.similarity * 0.7));
+                })
+            )
+            .force("charge", d3.forceManyBody().strength(-150))  
+            
+        for (let i = 0; i < 10; i++) {
+            simulation.tick();
+        }
+        
+        // Draw links
+        svg.selectAll(".link")
+            .data(links)
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y)
+            .style("stroke", "#999")
+            .style("stroke-opacity", 0.6)
+            .style("stroke-width", d => Math.sqrt(d.similarity) * 5);
+
+        // Draw circles last (so they appear under the text)
+        var node = svg.selectAll(".node")
+            .data(nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+
+        node.append("circle")
+            .attr("r", d => d.isCenterNode ? 60 : 45)
+            .style("fill", d => d.isCenterNode ? "#ff5500" : "#3388ff")
+            .style("fill-opacity", 0.3) 
+            .style("stroke", "#fff")
+            .style("stroke-width", 2);
+
+        // White text backgrounds & labelz 
+        node.each(function(d) {
+            const textNode = d3.select(this);
+            
+            // White background pannel 
+            textNode.append("rect")
+                .attr("x", -60)
+                .attr("y", -25)
+                .attr("width", 120)
+                .attr("height", 55)
+                .attr("fill", "white")
+                .attr("fill-opacity", 0.9)
+                .attr("rx", 5)
+                .attr("ry", 5)
+                .style("stroke", "#ccc")
+                .style("stroke-width", 1);
+            
+            // artist name
+            textNode.append("text")
+                .attr("class", "artist-name")
+                .attr("dy", -10)
+                .attr("text-anchor", "middle")
+                .text(d.name)
+                .style("fill", "black")
+                .style("font-weight", "bold")
+                .style("font-size", d.isCenterNode ? 14 : 12)
+                .style("pointer-events", "none");
+            
+            // song title
+            textNode.append("text")
+                .attr("class", "song-title")
+                .attr("dy", 8)
+                .attr("text-anchor", "middle")
+                .text(function() {
+                    if (d.title) {
+                        updateDebug(`Node title: ${d.title}`);
+                        return d.title;
+                    } else {
+                        updateDebug("Missing title for node: " + d.name);
+                        return "Unknown Title";
+                    }
+                })
+                .style("fill", "black")
+                .style("font-style", "italic")
+                .style("font-size", d.isCenterNode ? 12 : 10)
+                .style("pointer-events", "none");
+            
+            // similarity score
+            if (!d.isCenterNode) {
+                textNode.append("text")
+                    .attr("class", "similarity-score")
+                    .attr("dy", 23)
+                    .attr("text-anchor", "middle")
+                    .text("Similarity: " + d.similarity.toFixed(2))
+                    .style("fill", "#666")
+                    .style("font-size", "9px")
+                    .style("pointer-events", "none");
+            }
+        });
+
+        // Add tooltips
+        node.append("title")
+            .text(d => {
+                if (d.isCenterNode) {
+                    return `${d.name} - ${d.title}`;
+                } else {
+                    return `${d.name} - ${d.title}\nSimilarity: ${d.similarity.toFixed(3)}`;
+                }
+            });
+            
+        // Update  similar songs table
+        upd8SimSongsTab(nodes);
+    }).catch(function(error) {
+        console.error("Error creating visualization:", error);
+        document.getElementById('visualization').innerHTML = 
+            '<p>Error loading visualization. Please check console for details.</p>';
+    });
+}
+
+// Function to update similar songs table
+function upd8SimSongsTab(nodes) {
+    const tableBody = document.getElementById('similar-songs-body');
+    tableBody.innerHTML = ''; 
+    
+    // Skip first node (center node) - sort rest by similarity
+    const similarNodes = nodes.filter(node => !node.isCenterNode)
+                             .sort((a, b) => b.similarity - a.similarity);
+    
+    // Add each similar song to table (max 10)
+    let count = 0;
+    for (let i = 0; i < similarNodes.length && count < 10; i++) {
+        const node = similarNodes[i];
+        
+        // Skip unknowns
+        if (node.name === "Unknown Artist" && node.title === "Unknown Title") {
+            continue;
+        }
+        
+        const row = document.createElement('tr');
+        
+        // Highlight current row on hover 
+        row.onmouseover = function() {
+            this.style.backgroundColor = '#e0f0ff';
+        };
+        row.onmouseout = function() {
+            this.style.backgroundColor = '';
+        };
+        
+        const generateYouTubeSearchURL = function(artist, title) {
+            const searchQuery = encodeURIComponent(`${artist} ${title}`);
+            return `https://www.youtube.com/results?search_query=${searchQuery}`;
+        };
+        
+        row.innerHTML = `
+            <td>${count + 1}</td>
+            <td>${node.name}</td>
+            <td>${node.title}</td>
+            <td>${node.similarity.toFixed(3)}</td>
+            <td><a href="#" onclick="window.open('${generateYouTubeSearchURL(node.name, node.title)}', '_blank', 'width=800,height=600'); return false;"><i class="fab fa-youtube"></i> Search</a></td>
+        `;
+        
+        tableBody.appendChild(row);
+        count++;
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateDebug("DOM loaded");
+    loadSongs();
+    setWeightConts();
+    
+    // Set up search 
+    document.getElementById('song-search').addEventListener('input', filtSongz);
+    
+    // Set up listeners
+    document.getElementById('song-select').addEventListener('change', function() {
+        const selectedSongId = this.value;
+        
+        if (selectedSongId) {
+            center_node = selectedSongId;
+            updateDebug("Center node changed to: " + selectedSongId);
+            CreateViz(selectedSongId);
+        } else {
+            updateDebug("No song selected");
+        }
+    });
+    
+    // Initial visualization
+    checkApiStatus();
+});
+</script>
+</body>
+</html>

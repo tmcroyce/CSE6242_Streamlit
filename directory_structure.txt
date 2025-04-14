@@ -1,0 +1,23 @@
+/CSE6242_TEAM210
+│── README.md                       # README file
+│── app.py                          # Flask app
+│── your_script.py                  # Python script with similarity calculation
+│── /static
+│   └── d3.v5.min.js                    # D3.js library
+|   └── d3-dsv.min.js                   # D3.js library
+|   └── d3-legend.min.js                # D3.js library
+|   └── d3-tip.min.js                   # D3.js library
+│── /templates
+│   └── index.html                      # Actual HTML file
+|   └── index_test.html                 # Test HTML file to make sure connections work
+│── /data
+│   └── millionsong_subset.csv          # Subset csv
+|   └── artist_id_and_name.csv          # Rows are artists, columns are ids and names
+|   └── artist_term_components.csv      # Rows are artists, columns are term components
+|   └── non_nest_PCA.pkl                # Pickle file for similarity.py
+|   └── pitches_PCA.pkl                 # Pickle file for similarity.py
+|   └── relevant_artist_columns.pkl     # Pickle file for similarity.py
+|   └── timbre_PCA.pkl                  # Pickle file for similarity.py
+|   └── data.csv                        # Full dataset csv, ONLY IF WE NEED IT
+│── /scripts
+│   └── similarity.py                   # Script that prints the similarity results in csv format

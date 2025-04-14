@@ -1,0 +1,8 @@
+flask==2.3.3
+pandas
+numpy
+scikit-learn
+pickle-mixin
+streamlit
+pyvis
+networkx

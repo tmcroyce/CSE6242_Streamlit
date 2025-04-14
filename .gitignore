@@ -182,3 +182,7 @@ data/*.pkl
 # Data zip files
 data/*.zip
 data/archive.zip
+
+# H5 files (which can be very large)
+*.h5
+data/*.h5

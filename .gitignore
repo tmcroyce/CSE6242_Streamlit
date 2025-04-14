@@ -183,3 +183,9 @@ data/non_nest_PCA.pkl
 data/pitches_PCA.pkl
 data/relevant_artist_columns.pkl
 data/timbres_PCA.pkl
+
+# Large data files
+data/*.pkl
+data/*.zip
+data/archive.zip
+*.pkl

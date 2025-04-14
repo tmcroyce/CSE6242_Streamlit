@@ -23,8 +23,8 @@ st.set_page_config(
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_files_exist = ensure_data_files_exist(script_dir)
 if not data_files_exist:
-    st.error("Some required data files could not be downloaded. The app may not function properly.")
-    st.info("Please upload the missing data files to Google Drive and update the file IDs in scripts/download_helpers.py")
+    # User will see the upload interface from ensure_data_files_exist
+    st.stop()  # Stop execution until files are uploaded
 
 st.title("Music Similarity Visualization")
 st.markdown("Find similar songs based on various audio features.")

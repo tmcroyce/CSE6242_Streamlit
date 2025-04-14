@@ -174,18 +174,11 @@ cython_debug/
 scratch.*
 static/
 
-# Include CSV files in data directory but exclude large PKL files
-*.pkl
-*.csv
-!data/*.csv
-# Keep the large files excluded as they'll be downloaded from Google Drive
-data/non_nest_PCA.pkl
-data/pitches_PCA.pkl
-data/relevant_artist_columns.pkl
-data/timbres_PCA.pkl
-
 # Large data files
 data/*.pkl
+*.pkl
+!data/keep_this_file.pkl  # Add an exception line if you have any small PKL files you want to keep
+
+# Data zip files
 data/*.zip
 data/archive.zip
-*.pkl

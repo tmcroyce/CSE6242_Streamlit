@@ -8,17 +8,38 @@ import streamlit as st
 import requests
 from urllib.parse import urlparse
 import base64
+import pickle
+import bz2
+import gzip
+import lzma
+from scripts.file_utils import load_compressed_pickle
 
 # SharePoint link to the data folder
 SHAREPOINT_URL = "https://gtvault-my.sharepoint.com/personal/sstewart78_gatech_edu/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fsstewart78%5Fgatech%5Fedu%2FDocuments%2Frestructured%20files%20and%20script%20for%20similarity%20analysis%2Ezip&parent=%2Fpersonal%2Fsstewart78%5Fgatech%5Fedu%2FDocuments&ga=1"
 
-# Required data files that should be extracted from the archive
+# Required data files (now using compressed lzma format)
 REQUIRED_FILES = [
+    'non_nest_PCA.lzma',
+    'pitches_PCA.lzma',
+    'relevant_artist_columns.lzma',
+    'timbres_PCA.lzma'
+]
+
+# Original PKL files for backwards compatibility and file uploads
+ORIGINAL_PKL_FILES = [
     'non_nest_PCA.pkl',
     'pitches_PCA.pkl',
     'relevant_artist_columns.pkl',
     'timbres_PCA.pkl'
 ]
+
+# Mapping from original PKL to compressed version
+FILE_MAPPING = {
+    'non_nest_PCA.pkl': 'non_nest_PCA.lzma',
+    'pitches_PCA.pkl': 'pitches_PCA.lzma',
+    'relevant_artist_columns.pkl': 'relevant_artist_columns.lzma',
+    'timbres_PCA.pkl': 'timbres_PCA.lzma'
+}
 
 def setup_directories():
     """
@@ -71,7 +92,7 @@ def download_data_guide():
     3. Upload each of the following required files using the file uploader below:
     """)
     
-    for file in REQUIRED_FILES:
+    for file in ORIGINAL_PKL_FILES:
         st.markdown(f"- {file}")
     
     uploaded_files = {}
@@ -79,16 +100,42 @@ def download_data_guide():
     # Create a file uploader for each required file
     st.markdown("### Upload Required Files")
     
-    for file in REQUIRED_FILES:
-        uploaded_file = st.file_uploader(f"Upload {file}", type=['pkl'])
+    for orig_file in ORIGINAL_PKL_FILES:
+        target_file = FILE_MAPPING[orig_file]
+        uploaded_file = st.file_uploader(f"Upload {orig_file}", type=['pkl'])
+        
         if uploaded_file is not None:
-            # Save the uploaded file to the data directory
-            save_uploaded_file(uploaded_file, os.path.join("data", file))
-            uploaded_files[file] = True
+            # Convert and save the uploaded file to compressed format
+            try:
+                # Save the original PKL temporarily
+                temp_path = os.path.join("temp", orig_file)
+                os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+                
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                
+                # Load the pickle file
+                with open(temp_path, 'rb') as f:
+                    data = pickle.load(f)
+                
+                # Save as compressed file
+                target_path = os.path.join("data", target_file)
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                
+                with lzma.open(target_path, 'wb') as f:
+                    pickle.dump(data, f)
+                
+                # Remove the temp file
+                os.remove(temp_path)
+                
+                uploaded_files[target_file] = True
+                st.success(f"✅ Successfully converted and saved {orig_file} as {target_file}")
+            except Exception as e:
+                st.error(f"Error processing {orig_file}: {str(e)}")
     
     # Check if all files have been uploaded
     if len(uploaded_files) == len(REQUIRED_FILES):
-        st.success(" All required files have been uploaded! You can now use the application.")
+        st.success("✅ All required files have been uploaded! You can now use the application.")
         st.session_state['data_files_uploaded'] = True
         # Add a button to refresh the page
         if st.button("Continue to the Application"):
@@ -135,6 +182,26 @@ def ensure_data_files_exist(script_dir):
     for file_name in REQUIRED_FILES:
         file_path = os.path.join(script_dir, 'data', file_name)
         if not os.path.exists(file_path):
+            # Check for the original PKL version and convert if it exists
+            orig_idx = list(FILE_MAPPING.values()).index(file_name) if file_name in FILE_MAPPING.values() else -1
+            if orig_idx >= 0:
+                orig_file = ORIGINAL_PKL_FILES[orig_idx]
+                orig_path = os.path.join(script_dir, 'data', orig_file)
+                
+                if os.path.exists(orig_path):
+                    try:
+                        # Convert PKL to compressed format
+                        with open(orig_path, 'rb') as f:
+                            data = pickle.load(f)
+                        
+                        with lzma.open(file_path, 'wb') as f:
+                            pickle.dump(data, f)
+                        
+                        st.success(f"Converted {orig_file} to {file_name}")
+                        continue
+                    except Exception as e:
+                        st.error(f"Error converting {orig_file} to {file_name}: {str(e)}")
+            
             missing_files.append(file_name)
             all_files_exist = False
     

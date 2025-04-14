@@ -16,10 +16,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import PCA
 import pickle
 import os
+import lzma
 
-# Import our custom download helper module
+# Import our custom download helper and file utility modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts.download_helpers import ensure_data_files_exist
+from scripts.file_utils import load_compressed_pickle
 
 #Gets the cosine similarity between our given song vector and
 #the other rows in the reference
@@ -91,19 +93,13 @@ if __name__ == '__main__':
     
     # Now load the data files
     genre_PCA = pd.read_csv(os.path.join(script_dir, 'data/artist_term_components.csv'), index_col='Unnamed: 0')
-    with open(os.path.join(script_dir, 'data/relevant_artist_columns.pkl'), 'rb') as f: 
-        similar_artists = pickle.load(f)
-    with open(os.path.join(script_dir, 'data/pitches_PCA.pkl'), 'rb') as f: 
-        pitches_PCA = pickle.load(f)
-    with open(os.path.join(script_dir, 'data/timbres_PCA.pkl'), 'rb') as f: 
-        timbre_PCA = pickle.load(f)
-        
-    #Note that non_nest_PCA.pkl just consist of the loudness_start metric.
-    #None of the other metrics seemed to work, and I think any more than 5
-    #metrics would be kind of excessive. 
     
-    with open(os.path.join(script_dir, 'data/non_nest_PCA.pkl'), 'rb') as f: 
-        non_nest_PCA = pickle.load(f)
+    # Load compressed pickle files using the helper function
+    similar_artists = load_compressed_pickle(os.path.join(script_dir, 'data/relevant_artist_columns.lzma'))
+    pitches_PCA = load_compressed_pickle(os.path.join(script_dir, 'data/pitches_PCA.lzma'))
+    timbre_PCA = load_compressed_pickle(os.path.join(script_dir, 'data/timbres_PCA.lzma'))
+    non_nest_PCA = load_compressed_pickle(os.path.join(script_dir, 'data/non_nest_PCA.lzma'))
+    
     subset = pd.read_csv(os.path.join(script_dir, 'data/artist_id_and_name.csv'), index_col='song_id')
     
     label_order = list(subset.index)

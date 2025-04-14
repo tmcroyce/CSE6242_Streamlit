@@ -11,13 +11,20 @@ from pyvis.network import Network
 import tempfile
 from pathlib import Path
 import math
-
+from scripts.download_helpers import ensure_data_files_exist
 
 st.set_page_config(
     page_title="Music Similarity Visualization",
     page_icon="🎵",
     layout="wide"
 )
+
+# Check if data files exist, download if necessary
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_files_exist = ensure_data_files_exist(script_dir)
+if not data_files_exist:
+    st.error("Some required data files could not be downloaded. The app may not function properly.")
+    st.info("Please upload the missing data files to Google Drive and update the file IDs in scripts/download_helpers.py")
 
 st.title("Music Similarity Visualization")
 st.markdown("Find similar songs based on various audio features.")

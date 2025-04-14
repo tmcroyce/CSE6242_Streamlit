@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr  7 09:33:03 2025
@@ -14,6 +15,11 @@ import sys
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import PCA
 import pickle
+import os
+
+# Import our custom download helper module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from scripts.download_helpers import ensure_data_files_exist
 
 #Gets the cosine similarity between our given song vector and
 #the other rows in the reference
@@ -77,6 +83,13 @@ if __name__ == '__main__':
     import os
     script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
+    # Ensure all required data files exist
+    data_files_exist = ensure_data_files_exist(script_dir)
+    if not data_files_exist:
+        print("Error: Missing required data files. Please make sure all data files are available.")
+        sys.exit(1)
+    
+    # Now load the data files
     genre_PCA = pd.read_csv(os.path.join(script_dir, 'data/artist_term_components.csv'), index_col='Unnamed: 0')
     with open(os.path.join(script_dir, 'data/relevant_artist_columns.pkl'), 'rb') as f: 
         similar_artists = pickle.load(f)

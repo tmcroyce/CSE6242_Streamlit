@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Make script executable
+chmod +x setup.sh
+
+# Ensure pip is up to date
+pip install --upgrade pip
+
 # Install Python dependencies
 pip install -r requirements.txt
 
@@ -7,16 +13,14 @@ pip install -r requirements.txt
 mkdir -p ~/.streamlit
 
 # Create Streamlit config
-echo "[server]
+cat > ~/.streamlit/config.toml << EOF
+[server]
 headless = true
-port = $PORT
 enableCORS = false
-" > ~/.streamlit/config.toml
+EOF
 
-echo "[theme]
-primaryColor = '#FF4B4B'
-backgroundColor = '#FFFFFF'
-secondaryBackgroundColor = '#F0F2F6'
-textColor = '#262730'
-font = 'sans serif'
-" > ~/.streamlit/config.toml
+# Create credentials file
+cat > ~/.streamlit/credentials.toml << EOF
+[general]
+email = ""
+EOF

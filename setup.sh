@@ -10,8 +10,12 @@ pip install --upgrade pip
 if command -v apt-get &> /dev/null; then
     # For Debian/Ubuntu
     apt-get update
-    apt-get install -y --no-install-recommends zlib1g-dev libjpeg-dev libpng-dev
+    apt-get install -y --no-install-recommends zlib1g-dev libjpeg-dev libpng-dev liblzma-dev
 fi
+
+# Force a clean reinstall of critical packages to ensure they're properly installed
+pip uninstall -y pandas numpy scikit-learn
+pip install --prefer-binary pandas>=2.1.0 numpy>=1.26.0 scikit-learn>=1.3.0
 
 # Install Python dependencies - use wheels where possible
 pip install --prefer-binary -r requirements.txt

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69.0.2", "wheel>=0.42.0", "numpy>=1.26.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "music-similarity-visualization"
+version = "0.1.0"
+description = "Music Similarity Visualization Streamlit App"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    {name = "Travis Royce", email = "user@example.com"}
+]
+dependencies = [
+    "flask==2.3.3",
+    "pandas==2.2.0",
+    "numpy==1.26.3",
+    "scikit-learn==1.4.0",
+    "pickle-mixin==1.0.2",
+    "streamlit==1.26.0",
+    "Pillow==9.5.0",
+    "pyvis==0.3.2",
+    "networkx==3.1",
+    "requests==2.31.0",
+    "pyarrow==14.0.1",
+    "h5py==3.10.0",
+    "setuptools==69.0.2",
+    "wheel==0.42.0",
+]
